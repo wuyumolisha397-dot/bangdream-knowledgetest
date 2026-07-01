@@ -7,7 +7,10 @@
 
 from __future__ import annotations
 
-from .kb_index import IndexEntry
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from kb_index import IndexEntry
 
 
 # ── 格式常量 ────────────────────────────────────────────────────────────────

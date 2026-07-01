@@ -14,25 +14,41 @@ astrbot_plugin_bandori — BanG Dream! 知识库插件
 
 from __future__ import annotations
 
+import importlib.util
 import os
-import sys
 from pathlib import Path
-
-# ── 确保插件自身目录在 sys.path，AstrBot 插件加载机制需要 ──
-_plugin_dir = Path(__file__).resolve().parent
-if str(_plugin_dir) not in sys.path:
-    sys.path.insert(0, str(_plugin_dir))
 
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
 
-from services.kb_index import KnowledgeIndex
-from services.character import CharacterService
-from services.song import SongService
-from services.band import BandService
-from services.search import SearchService
-from services import formatter
+# ── 按文件路径加载 service 模块（绕过 AstrBot 插件包导入限制）────────────
+_plugin_dir = Path(__file__).resolve().parent
+_services_dir = _plugin_dir / "services"
+
+
+def _load_module(name: str):
+    """加载 services/ 下的 .py 文件为独立模块"""
+    path = _services_dir / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(f"bandori_{name}", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_kb_index = _load_module("kb_index")
+_character_svc = _load_module("character")
+_song_svc = _load_module("song")
+_band_svc = _load_module("band")
+_search_svc = _load_module("search")
+_formatter = _load_module("formatter")
+
+KnowledgeIndex = _kb_index.KnowledgeIndex
+CharacterService = _character_svc.CharacterService
+SongService = _song_svc.SongService
+BandService = _band_svc.BandService
+SearchService = _search_svc.SearchService
+formatter = _formatter
 
 
 # ── 知识库路径 ────────────────────────────────────────────────────────────────
@@ -90,10 +106,10 @@ class BandoriPlugin(Star):
         self._kb_ready = bool(kb_path)
 
         self._index = KnowledgeIndex(kb_path if kb_path else "")
-        self._character_svc = CharacterService(self._index)
-        self._song_svc = SongService(self._index)
-        self._band_svc = BandService(self._index)
-        self._search_svc = SearchService(self._index)
+        self._character_svc = CharacterService(self._index, formatter)
+        self._song_svc = SongService(self._index, formatter)
+        self._band_svc = BandService(self._index, formatter)
+        self._search_svc = SearchService(self._index, formatter)
 
     # ── 生命周期 ─────────────────────────────────────────────────────────────
 
