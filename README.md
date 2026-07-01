@@ -1,262 +1,81 @@
 # bandori-knowledge
 
-BanG Dream! 知识库自动构建工具 — 从萌娘百科爬取词条并导出高质量 Markdown，附带 AstrBot 插件。
+BanG Dream! 知识库 + AstrBot 插件 — 一键部署，QQ 机器人可用。
 
-## 功能特性
-
-**爬虫**
-- 🔄 全自动爬取 — 从 `Category:BanG Dream!` 递归所有子分类
-- 📄 高质量 Markdown — mwparserfromhell + 自定义清洗管线
-- 📁 自动分类 — 角色 / 歌曲 / 乐队 / 声优 / 动画 / Live
-- ✂️ 长页面拆分 — 超过 5000 字按 H2/H3 自动分页
-- 💾 断点续爬 — SQLite 缓存 + Ctrl+C 优雅退出
-- 🔄 增量更新 — 仅下载 RevisionID 变更的页面
-- 🎯 智能过滤 — 跳过消歧义/沙盒/帮助页面，不过滤维护标签
-
-**AstrBot 插件**
-- 🤖 9 个命令 — `/角色` `/歌曲` `/乐队` `/声优` + 随机 + 搜索
-- 🖼️ 图文卡片 — `chain_result([Image, Plain])` 图文合并一条消息
-- 🔍 本地检索 — 启动时内存索引，毫秒级模糊搜索
-- 🎲 随机浏览 — 智能过滤空页 + 简介优先
-- ⚙️ WebUI 配置 — `_conf_schema.json` 可在线改知识库路径
-
-**工具链**
-- 🎨 LLM 标准化 — `tools/llm_normalize.py` 用 DeepSeek 统一词条长度
-- 🖼️ 图片下载 — `tools/download_images.py` 自动扒角色/声优立绘
-- 🔍 质量扫描 — `tools/scan_quality.py` 检测空文档/截断/Wiki残留
-
-## 安装
+## 快速开始
 
 ```bash
-# 克隆项目
-git clone https://github.com/wuyumolisha397-dot/bangdream-knowledgetest.git
-cd bandori-knowledge
+# 1. 下载知识库
+git clone -b kb-data https://github.com/wuyumolisha397-dot/astrbot_plugin_bandori-knowledge.git bandori-kb
+cd bandori-kb
+tar -xzf releases/bandori-kb-v1.1.tar.gz
 
-# 安装依赖（建议使用虚拟环境）
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
+# 2. 下载插件
+git clone https://github.com/wuyumolisha397-dot/astrbot_plugin_bandori-knowledge.git
 
-pip install -r requirements.txt
-```
-
-### 系统要求
-
-- Python 3.11+
-- 网络（需访问 zh.moegirl.org.cn）
-
-## 使用
-
-### 完整爬取
-
-```bash
-python crawler.py
-```
-
-首次运行将：
-1. 从 `Category:BanG Dream!` 递归发现所有子分类
-2. 获取所有页面内容
-3. 解析 wikitext 为 Markdown
-4. 按分类导出到 `output/` 目录
-
-### 增量更新
-
-```bash
-python crawler.py update
-# 或
-python crawler.py --update
-```
-
-仅下载 RevisionID 发生变化的页面，大幅减少请求量。
-
-### 查看统计
-
-```bash
-python crawler.py stats
-# 或
-python crawler.py --stats
-```
-
-### 清空缓存
-
-```bash
-python crawler.py clean-cache
-# 或
-python crawler.py --clean-cache
-```
-
-清除所有缓存数据，下次运行将从头爬取。
-
-## 输出结构
-
-```
-output/
-├── 角色/
-│   ├── 千早爱音.md
-│   ├── 高松灯.md
-│   └── ...
-├── 歌曲/
-│   ├── 碧天伴走.md
-│   └── ...
-├── 乐队/
-│   ├── MyGO!!!!!!.md
-│   ├── Ave_Mujica.md
-│   └── ...
-├── 动画/
-│   └── ...
-├── 专辑/
-│   └── ...
-├── Live/
-│   └── ...
-├── 其它/
-│   └── ...
-├── _index.json          # 页面索引（供 AstrBot 使用）
-└── _crawl_stats.json    # 爬取统计
-```
-
-### Markdown 格式
-
-每个文件包含 YAML frontmatter：
-
-```markdown
----
-title: 千早爱音
-url: https://zh.moegirl.org.cn/千早爱音
-revision: 123456
-updated: 2026-07-01
-categories:
-  - BanG Dream!
-  - MyGO!!!!!
----
-
-# 千早爱音
-
-正文内容……
-```
-
-## AstrBot 插件
-
-详见 [astrbot_plugin_bandori/](astrbot_plugin_bandori/) 目录。
-
-**安装**
-
-```bash
-cp -r astrbot_plugin_bandori/ <astrbot>/data/plugins/
-export BANDORI_KB_PATH=/path/to/bandori-knowledge/output
+# 3. 部署
+cp -r astrbot_plugin_bandori-knowledge <astrbot>/data/plugins/astrbot_plugin_bandori
+export BANDORI_KB_PATH=$(pwd)/output
 # 重启 AstrBot
 ```
 
-**命令**
+## 插件命令
 
-| 命令 | 功能 | 图文 |
-|------|------|------|
-| `/角色 丰川祥子` | 查角色 | ✅ |
-| `/歌曲 壱雫空` | 查歌曲 | ❌ |
-| `/乐队 Roselia` | 查乐队 | ❌ |
-| `/声优 爱美` | 查声优 | ✅ |
-| `/随机角色` | 随机角色 | ✅ |
-| `/随机歌曲` | 随机歌曲 | - |
-| `/随机声优` | 随机声优 | ✅ |
-| `/萌百搜索 xxx` | 全站搜索 | - |
-| `/bandori` | 帮助 | - |
+| 命令 | 功能 |
+|------|------|
+| `/角色 丰川祥子` / `/随机角色` | 角色查询 |
+| `/歌曲 壱雫空` / `/随机歌曲` | 歌曲查询 |
+| `/乐队 Roselia` / `/随机乐队` | 乐队查询 |
+| `/声优 爱美` / `/随机声优` | 声优查询 |
+| `/萌百搜索 Roselia` | 全站搜索 |
+| `/bandori` | 帮助 |
 
-**图片**
+所有查询支持图文卡片回复。图片需运行 `tools/download_images.py` 下载。
 
-在 `output/images/` 下按约定路径放图即自动匹配：
+## 知识库
+
+| 分类 | 条目数 | 图文 |
+|------|--------|------|
+| 角色 | 137 | ✅ 69 张 |
+| 歌曲 | 648 | 待下载 |
+| 乐队 | 70 | ✅ 22 张 |
+| 声优 | 64 | ✅ 62 张 |
+| 其它 | 301 | - |
+
+数据来源：萌娘百科 BanG Dream! 专题。定期更新。
+
+## 图片下载
+
+```bash
+pip install httpx pyyaml
+python tools/download_images.py          # 角色
+python tools/download_images.py 声优      # 声优
+python tools/download_images.py 歌曲      # 歌曲
+python tools/download_images.py 乐队      # 乐队
 ```
-images/character/丰川祥子.png
-images/声优/爱美.jpg
+
+图片自动匹配，插件回复时图文合并一条消息。
+
+## 爬虫（可选）
+
+如果你需要自己爬取最新数据：
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python crawler.py           # 完整爬取
+python crawler.py update    # 增量更新
 ```
-或运行 `tools/download_images.py` 自动从萌娘扒图。
-
-## 环境变量配置
-
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `BANDORI_RATE_LIMIT` | 请求间隔（秒） | 0.5 |
-| `BANDORI_MAX_CONCURRENT` | 最大并发数 | 3 |
-| `BANDORI_DB_PATH` | 缓存数据库路径 | cache/pages.db |
-| `BANDORI_OUTPUT_DIR` | 输出目录 | output/ |
-| `BANDORI_ROOT_CATEGORY` | 起始分类 | Category:BanG Dream! |
-| `BANDORI_HTTP2` | 启用 HTTP/2 | true |
-| `BANDORI_LOG_LEVEL` | 日志级别 | INFO |
 
 ## 项目结构
 
 ```
-bandori-knowledge/
-├── crawler.py            # 主入口（CLI + 爬虫编排）
-├── parser.py             # wikitext → Markdown 解析器
-├── exporter.py           # Markdown 文件导出器
-├── mediawiki.py          # MediaWiki API 异步客户端
-├── cache.py              # SQLite 缓存管理
-├── models.py             # 数据模型定义
-├── config.py             # 配置管理
-├── utils.py              # 工具函数
-├── requirements.txt      # 运行时依赖
-├── requirements-dev.txt  # 开发依赖（含测试）
-├── README.md             # 本文件
-├── LICENSE               # MIT License
-├── tools/                # 辅助脚本
-│   ├── crawl_voice_actors.py  # 声优抓取
-│   ├── scan_quality.py        # 质量扫描
-│   └── auto_fix.py            # 自动修复
-├── astrbot_plugin_bandori/    # AstrBot 插件
-├── tests/                # 测试目录
-├── logs/                 # 日志目录（gitignored）
-├── cache/                # 缓存目录（gitignored）
-└── output/               # 输出目录（gitignored）
+├── crawler.py / parser.py / exporter.py   # 爬虫核心
+├── config.py / models.py / utils.py       # 基础设施
+├── astrbot_plugin_bandori/                # AstrBot 插件
+├── tools/                                 # 辅助脚本
+└── output/                                # 知识库数据
 ```
-
-## 技术栈
-
-- **HTTP 客户端**: httpx (AsyncClient + HTTP/2)
-- **Wiki 解析**: mwparserfromhell
-- **重试策略**: tenacity (指数退避 + 随机抖动)
-- **缓存**: SQLite (WAL 模式)
-- **序列化**: orjson, PyYAML
-- **CLI**: typer
-- **日志**: loguru
-- **进度条**: rich
-
-## FAQ
-
-### Q: 爬取速度太慢怎么办？
-
-调低请求间隔、提高并发数：
-
-```bash
-export BANDORI_RATE_LIMIT=0.2
-export BANDORI_MAX_CONCURRENT=5
-python crawler.py
-```
-
-⚠️ 请注意不要对服务器造成过大压力。
-
-### Q: 爬取中断了怎么办？
-
-直接重新运行 `python crawler.py`，缓存会自动跳过已完成的页面。如需完全重新爬取，先运行 `python crawler.py clean-cache`。
-
-### Q: 如何只更新部分页面？
-
-使用增量更新模式：`python crawler.py update`，只会下载 RevisionID 变化的页面。
-
-### Q: 输出目录如何给 AstrBot 使用？
-
-将 `output/` 目录整体导入 AstrBot 知识库，或使用 `_index.json` 索引文件。
-
-### Q: 某些页面导出为空？
-
-可能原因：
-- 页面是重定向页（自动跳过）
-- 页面内容被模板/导航框占满（解析后被清理）
-- 页面实际内容为空
-
-### Q: 如何添加新的分类映射？
-
-编辑 `config.py` 中的 `OutputConfig.category_dir_map`，添加新的关键字 → 目录映射。
 
 ## 许可证
 
@@ -264,14 +83,6 @@ MIT License
 
 ## Vibe Coding 声明
 
-本项目完全由 AI 辅助生成（Claude / Vibe Coding），无人工编写代码。
+本项目完全由 AI 辅助生成（Claude / Vibe Coding）。
 
-- 代码逻辑可能包含错误、冗余或不优雅的实现
-- 测试覆盖不完整，部分边界情况未验证
-- 欢迎提 Issue / PR 改善
-
-> ⚠️ **生产使用前请自行审查代码。**
-
-## 免责声明
-
-本项目仅供学习交流使用。爬取的数据来源于萌娘百科，请遵守萌娘百科的使用条款。请合理控制请求频率，不要对服务器造成过大压力。
+> ⚠️ 生产使用前请自行审查代码。
