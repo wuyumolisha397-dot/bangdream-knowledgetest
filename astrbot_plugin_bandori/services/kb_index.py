@@ -203,36 +203,40 @@ class KnowledgeIndex:
     def _score(entry: IndexEntry, query_lower: str) -> float:
         """计算匹配分数"""
         title_lower = entry.title.lower()
+        score = 0.0
 
         # 精确标题匹配 → 最高分
         if title_lower == query_lower:
-            return 100.0
-
+            score = 100.0
         # 标题以查询开头
-        if title_lower.startswith(query_lower):
-            return 80.0
-
+        elif title_lower.startswith(query_lower):
+            score = 80.0
+            # 「简介」页加权
+            if "简介" in title_lower:
+                score += 10
         # 标题包含查询
-        if query_lower in title_lower:
-            # 完整词匹配比部分匹配分高
-            return 60.0 + (len(query_lower) / len(title_lower)) * 20.0
-
+        elif query_lower in title_lower:
+            score = 60.0 + (len(query_lower) / len(title_lower)) * 20.0
+            if "简介" in title_lower:
+                score += 5
         # 查询包含在分类中
-        for cat in entry.categories:
-            if query_lower in cat.lower():
-                return 30.0
+        else:
+            for cat in entry.categories:
+                if query_lower in cat.lower():
+                    score = 30.0
+                    break
+            if score == 0 and query_lower in entry.preview.lower():
+                score = 15.0
+            if score == 0 and len(query_lower) >= 2:
+                overlap = sum(1 for ch in query_lower if ch in title_lower)
+                if overlap >= len(query_lower) * 0.6:
+                    score = 10.0 + overlap * 3.0
 
-        # 查询包含在正文预览中
-        if query_lower in entry.preview.lower():
-            return 15.0
+        # 惩罚空页 — 正文少于 30 字扣分
+        if len(entry.preview) < 30:
+            score -= 40
 
-        # 字符级部分匹配（适用于中文短词）
-        if len(query_lower) >= 2:
-            overlap = sum(1 for ch in query_lower if ch in title_lower)
-            if overlap >= len(query_lower) * 0.6:
-                return 10.0 + overlap * 3.0
-
-        return 0.0
+        return max(score, 0)
 
     # ── 精确获取 ───────────────────────────────────────────────────────────
 
@@ -249,11 +253,19 @@ class KnowledgeIndex:
     # ── 随机 ────────────────────────────────────────────────────────────────
 
     def random_pick(self, category: str) -> Optional[IndexEntry]:
-        """从指定分类中随机抽取"""
+        """从指定分类中随机抽取，避开空页/注释页"""
         pool = self._entries.get(category, [])
         if not pool:
             return None
-        return random.choice(pool)
+        # 过滤：只取正文超过 50 字的条目
+        good = [e for e in pool if len(e.preview) > 50]
+        if good:
+            return random.choice(good)
+        # 退而求其次
+        decent = [e for e in pool if len(e.preview) > 10]
+        if decent:
+            return random.choice(decent)
+        return random.choice(pool) if pool else None
 
     # ── 读取全文 ────────────────────────────────────────────────────────────
 

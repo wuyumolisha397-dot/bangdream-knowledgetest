@@ -51,6 +51,23 @@ SearchService = _search_svc.SearchService
 formatter = _formatter
 
 
+# ── 参数提取 ────────────────────────────────────────────────────────────────
+
+def _extract_arg(message_str: str, cmd: str) -> str:
+    """从消息中提取命令参数
+
+    AstrBot 不同平台传的 message_str 可能是 "/角色 名字" 或 "角色 名字"
+    """
+    msg = message_str.strip()
+    # 去 /
+    if msg.startswith("/"):
+        msg = msg[1:]
+    # 去命令名
+    if msg.startswith(cmd):
+        msg = msg[len(cmd):]
+    return msg.strip()
+
+
 # ── 知识库路径 ────────────────────────────────────────────────────────────────
 
 def _resolve_kb_path(context: Context | None = None) -> str:
@@ -153,7 +170,7 @@ class BandoriPlugin(Star):
             )
             return
 
-        name = event.message_str.replace("/角色", "", 1).strip()
+        name = _extract_arg(event.message_str, "角色")
         result = await self._character_svc.query(name)
         yield event.plain_result(result)
 
@@ -184,7 +201,7 @@ class BandoriPlugin(Star):
             )
             return
 
-        name = event.message_str.replace("/歌曲", "", 1).strip()
+        name = _extract_arg(event.message_str, "歌曲")
         result = await self._song_svc.query(name)
         yield event.plain_result(result)
 
@@ -215,7 +232,7 @@ class BandoriPlugin(Star):
             )
             return
 
-        name = event.message_str.replace("/乐队", "", 1).strip()
+        name = _extract_arg(event.message_str, "乐队")
         result = await self._band_svc.query(name)
         yield event.plain_result(result)
 
@@ -234,7 +251,7 @@ class BandoriPlugin(Star):
             )
             return
 
-        keyword = event.message_str.replace("/萌百搜索", "", 1).strip()
+        keyword = _extract_arg(event.message_str, "萌百搜索")
         result = await self._search_svc.query(keyword)
         yield event.plain_result(result)
 

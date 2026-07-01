@@ -17,7 +17,7 @@ class SongService:
         results = self._index.search(name, category="歌曲", limit=5)
         if results:
             best_entry, score = results[0]
-            if score >= 30:
+            if score >= 20:
                 content = self._index.read_content(best_entry)
                 return self._fmt.format_entry_detail(best_entry, content)
             return self._fmt.format_search_results(results, name, category="歌曲")
@@ -28,5 +28,5 @@ class SongService:
         entry = self._index.random_pick("歌曲")
         if entry is None:
             return self._fmt.format_error("歌曲库为空")
-        content = self._index.read_content(entry, max_len=800)
+        content = self._index.read_content(entry, max_len=600)
         return self._fmt.format_random(entry, content)
