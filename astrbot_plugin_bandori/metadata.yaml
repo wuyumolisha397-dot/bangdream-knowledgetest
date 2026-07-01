@@ -4,4 +4,5 @@ display_name: BanG Dream! 知识库
 desc: 查询 BanG Dream! 企划的角色、歌曲、乐队信息，支持本地知识库检索与 RAG 回退。
 version: 1.0.0
 short_desc: BanG Dream! 知识库插件
-homepage: https://github.com/bandori-knowledge/astrbot_plugin_bandori
+astrbot_version: ">=4.13.0"
+homepage: https://github.com/wuyumolisha397-dot/bangdream-knowledgetest
