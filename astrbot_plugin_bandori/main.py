@@ -155,6 +155,28 @@ class BandoriPlugin(Star):
         """插件卸载"""
         logger.info("[Bandori] 插件已卸载")
 
+    # ── 图片发送 ─────────────────────────────────────────────────────────────
+
+    async def _send_result(
+        self, event: AstrMessageEvent, result: tuple
+    ) -> MessageEventResult:
+        """发送查询结果（先图后文），图片发送失败自动降级纯文本"""
+        if isinstance(result, tuple) and len(result) == 2:
+            text, image = result
+        else:
+            text, image = str(result), ""
+
+        # 先图
+        if image:
+            try:
+                # AstrBot v3/v4 通用图片发送
+                yield event.image_result(image)
+            except Exception as e:
+                logger.warning(f"[Bandori] 图片发送失败，降级纯文本: {e}")
+
+        # 后文
+        yield event.plain_result(text)
+
     # ── 命令：/角色 ───────────────────────────────────────────────────────────
 
     @filter.command("角色")
@@ -172,7 +194,8 @@ class BandoriPlugin(Star):
 
         name = _extract_arg(event.message_str, "角色")
         result = await self._character_svc.query(name)
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     @filter.command("随机角色")
     async def cmd_random_character(self, event: AstrMessageEvent) -> MessageEventResult:
@@ -184,7 +207,8 @@ class BandoriPlugin(Star):
             return
 
         result = await self._character_svc.random()
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     # ── 命令：/歌曲 ───────────────────────────────────────────────────────────
 
@@ -203,7 +227,8 @@ class BandoriPlugin(Star):
 
         name = _extract_arg(event.message_str, "歌曲")
         result = await self._song_svc.query(name)
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     @filter.command("随机歌曲")
     async def cmd_random_song(self, event: AstrMessageEvent) -> MessageEventResult:
@@ -215,7 +240,8 @@ class BandoriPlugin(Star):
             return
 
         result = await self._song_svc.random()
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     # ── 命令：/乐队 ───────────────────────────────────────────────────────────
 
@@ -234,7 +260,8 @@ class BandoriPlugin(Star):
 
         name = _extract_arg(event.message_str, "乐队")
         result = await self._band_svc.query(name)
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     # ── 命令：/萌百搜索 ───────────────────────────────────────────────────────
 
@@ -253,7 +280,8 @@ class BandoriPlugin(Star):
 
         keyword = _extract_arg(event.message_str, "萌百搜索")
         result = await self._search_svc.query(keyword)
-        yield event.plain_result(result)
+        async for r in self._send_result(event, result):
+            yield r
 
     # ── 命令：/bandori 帮助 ───────────────────────────────────────────────────
 

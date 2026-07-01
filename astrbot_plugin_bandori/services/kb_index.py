@@ -42,7 +42,7 @@ ALL_DIRS = ["角色", "歌曲", "乐队", "其它", "声优", "动画", "Live"]
 
 class IndexEntry:
     """单条索引项"""
-    __slots__ = ("title", "filepath", "categories", "preview", "category_dir")
+    __slots__ = ("title", "filepath", "categories", "preview", "category_dir", "image")
 
     def __init__(
         self,
@@ -51,16 +51,24 @@ class IndexEntry:
         categories: list[str],
         preview: str = "",
         category_dir: str = "",
+        image: str = "",
     ) -> None:
         self.title = title
         self.filepath = filepath
         self.categories = categories
         self.preview = preview
         self.category_dir = category_dir
+        self.image = image  # 本地路径或 HTTP URL，空字符串表示无图
 
 
 class KnowledgeIndex:
     """知识库全文索引"""
+
+    _IMAGE_DIRS = {
+        "角色": "images/character",
+        "歌曲": "images/song",
+        "乐队": "images/band",
+    }
 
     def __init__(self, kb_root: str) -> None:
         self._kb_root = Path(kb_root)
@@ -119,8 +127,7 @@ class KnowledgeIndex:
 
     # ── 解析 ───────────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _parse_file(filepath: Path, bucket: str) -> Optional[IndexEntry]:
+    def _parse_file(self, filepath: Path, bucket: str) -> Optional[IndexEntry]:
         """解析单个 .md 文件"""
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -131,6 +138,7 @@ class KnowledgeIndex:
         title = filepath.stem  # fallback
         categories: list[str] = []
         body = raw
+        image_url = ""
 
         # 解析 YAML frontmatter
         if raw.startswith("---"):
@@ -143,18 +151,24 @@ class KnowledgeIndex:
                         cats = fm.get("categories", [])
                         if isinstance(cats, list):
                             categories = [str(c) for c in cats if c]
+                        image_url = fm.get("image", "")
                 except yaml.YAMLError:
                     pass
                 body = parts[2]
 
         # 提取正文预览（前 200 字符，去掉标题行和空行）
         body_clean = body.strip()
-        body_clean = re.sub(r"^#.*\n", "", body_clean, count=1)  # 去 H1
+        body_clean = re.sub(r"^#.*\n", "", body_clean, count=1)
         body_clean = re.sub(r"\n{2,}", " ", body_clean)
         body_clean = re.sub(r"#+\s", "", body_clean)
         preview = body_clean[:200].strip()
 
         rel_path = str(filepath).replace("\\", "/")
+
+        # 图片解析：优先 frontmatter，其次本地文件约定
+        image = image_url
+        if not image:
+            image = self._resolve_local_image(title, bucket)
 
         return IndexEntry(
             title=title,
@@ -162,7 +176,22 @@ class KnowledgeIndex:
             categories=categories,
             preview=preview,
             category_dir=bucket,
+            image=image,
         )
+
+    def _resolve_local_image(self, title: str, bucket: str) -> str:
+        """按约定路径查找本地图片"""
+        sub = self._IMAGE_DIRS.get(bucket)
+        if not sub:
+            return ""
+        # 尝试多种文件名格式
+        safe_title = re.sub(r'[\\/:*?"<>|]', '_', title)
+        exts = (".jpg", ".png", ".webp")
+        for ext in exts:
+            path = self._kb_root / sub / f"{safe_title}{ext}"
+            if path.exists():
+                return str(path)
+        return ""
 
     # ── 搜索 ───────────────────────────────────────────────────────────────
 
