@@ -31,26 +31,36 @@ from services import formatter
 
 # ── 知识库路径 ────────────────────────────────────────────────────────────────
 
-def _resolve_kb_path() -> str:
+def _resolve_kb_path(context: Context | None = None) -> str:
     """解析知识库目录路径
 
     优先级：
-    1. 环境变量 BANDORI_KB_PATH
-    2. 相对路径（从插件目录出发）：../../../output
-    3. 绝对路径 fallback
+    1. WebUI 配置 (context.config.kb_path)
+    2. 环境变量 BANDORI_KB_PATH
+    3. 相对路径（从插件目录出发）
+    4. 当前工作目录 fallback
     """
+    # 1. WebUI 配置
+    if context is not None:
+        try:
+            webui_path = context.config.get("kb_path", "").strip()
+            if webui_path and Path(webui_path).exists():
+                return webui_path
+        except Exception:
+            pass
+
+    # 2. 环境变量
     env_path = os.getenv("BANDORI_KB_PATH", "")
     if env_path and Path(env_path).exists():
         return env_path
 
-    # 从插件目录出发：astrbot_plugin_bandori/ → data/plugins/astrbot_plugin_bandori/
-    # 知识库在项目根目录的 output/
+    # 3. 从插件目录出发探测
     plugin_dir = Path(__file__).resolve().parent
     relative = plugin_dir / ".." / ".." / ".." / "output"
     if relative.exists():
         return str(relative.resolve())
 
-    # fallback：当前工作目录下
+    # 4. 当前工作目录下
     cwd_output = Path.cwd() / "output"
     if cwd_output.exists():
         return str(cwd_output)
@@ -70,7 +80,7 @@ class BandoriPlugin(Star):
     def __init__(self, context: Context) -> None:
         super().__init__(context)
 
-        kb_path = _resolve_kb_path()
+        kb_path = _resolve_kb_path(context)
         self._kb_ready = bool(kb_path)
 
         self._index = KnowledgeIndex(kb_path if kb_path else "")
