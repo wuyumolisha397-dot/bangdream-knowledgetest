@@ -21,12 +21,12 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
 
-from services.kb_index import KnowledgeIndex
-from services.character import CharacterService
-from services.song import SongService
-from services.band import BandService
-from services.search import SearchService
-from services import formatter
+from .services.kb_index import KnowledgeIndex
+from .services.character import CharacterService
+from .services.song import SongService
+from .services.band import BandService
+from .services.search import SearchService
+from .services import formatter
 
 
 # ── 知识库路径 ────────────────────────────────────────────────────────────────
