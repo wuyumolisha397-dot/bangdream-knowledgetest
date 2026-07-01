@@ -15,18 +15,24 @@ astrbot_plugin_bandori — BanG Dream! 知识库插件
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+# ── 确保插件自身目录在 sys.path，AstrBot 插件加载机制需要 ──
+_plugin_dir = Path(__file__).resolve().parent
+if str(_plugin_dir) not in sys.path:
+    sys.path.insert(0, str(_plugin_dir))
 
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
 
-from .services.kb_index import KnowledgeIndex
-from .services.character import CharacterService
-from .services.song import SongService
-from .services.band import BandService
-from .services.search import SearchService
-from .services import formatter
+from services.kb_index import KnowledgeIndex
+from services.character import CharacterService
+from services.song import SongService
+from services.band import BandService
+from services.search import SearchService
+from services import formatter
 
 
 # ── 知识库路径 ────────────────────────────────────────────────────────────────
