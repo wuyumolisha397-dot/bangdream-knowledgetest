@@ -1,23 +1,35 @@
 # bandori-knowledge
 
-BanG Dream! 知识库自动构建工具 — 从萌娘百科爬取词条并导出高质量 Markdown，供 AstrBot 直接导入知识库。
+BanG Dream! 知识库自动构建工具 — 从萌娘百科爬取词条并导出高质量 Markdown，附带 AstrBot 插件。
 
 ## 功能特性
 
-- 🔄 **全自动爬取** — 从 `Category:BanG Dream!` 开始，递归所有子分类
-- 📄 **高质量 Markdown** — 使用 mwparserfromhell 解析 wikitext，生成干净 Markdown
-- 📁 **自动分类** — 按角色/歌曲/乐队/动画/专辑/Live/其它分目录
-- ✂️ **超长页面拆分** — 超过 5000 字自动按 H2/H3 拆分
-- 💾 **断点续爬** — 基于 SQLite 缓存，Ctrl+C 后可继续
-- 🔄 **增量更新** — 仅下载 RevisionID 变更的页面
-- 🚀 **高性能** — httpx AsyncClient + HTTP/2 + 连接池 + 速率控制
-- 📊 **详细统计** — 页面数/分类数/失败数/重试次数/耗时
+**爬虫**
+- 🔄 全自动爬取 — 从 `Category:BanG Dream!` 递归所有子分类
+- 📄 高质量 Markdown — mwparserfromhell + 自定义清洗管线
+- 📁 自动分类 — 角色 / 歌曲 / 乐队 / 声优 / 动画 / Live
+- ✂️ 长页面拆分 — 超过 5000 字按 H2/H3 自动分页
+- 💾 断点续爬 — SQLite 缓存 + Ctrl+C 优雅退出
+- 🔄 增量更新 — 仅下载 RevisionID 变更的页面
+- 🎯 智能过滤 — 跳过消歧义/沙盒/帮助页面，不过滤维护标签
+
+**AstrBot 插件**
+- 🤖 9 个命令 — `/角色` `/歌曲` `/乐队` `/声优` + 随机 + 搜索
+- 🖼️ 图文卡片 — `chain_result([Image, Plain])` 图文合并一条消息
+- 🔍 本地检索 — 启动时内存索引，毫秒级模糊搜索
+- 🎲 随机浏览 — 智能过滤空页 + 简介优先
+- ⚙️ WebUI 配置 — `_conf_schema.json` 可在线改知识库路径
+
+**工具链**
+- 🎨 LLM 标准化 — `tools/llm_normalize.py` 用 DeepSeek 统一词条长度
+- 🖼️ 图片下载 — `tools/download_images.py` 自动扒角色/声优立绘
+- 🔍 质量扫描 — `tools/scan_quality.py` 检测空文档/截断/Wiki残留
 
 ## 安装
 
 ```bash
 # 克隆项目
-git clone https://github.com/your-repo/bandori-knowledge.git
+git clone https://github.com/wuyumolisha397-dot/bangdream-knowledgetest.git
 cd bandori-knowledge
 
 # 安装依赖（建议使用虚拟环境）
@@ -124,21 +136,40 @@ categories:
 正文内容……
 ```
 
-## AstrBot 导入
+## AstrBot 插件
 
-本项目提供完整的 AstrBot 插件，详见 [astrbot_plugin_bandori/](astrbot_plugin_bandori/) 目录：
+详见 [astrbot_plugin_bandori/](astrbot_plugin_bandori/) 目录。
+
+**安装**
 
 ```bash
-# 1. 复制插件
 cp -r astrbot_plugin_bandori/ <astrbot>/data/plugins/
-
-# 2. 设置知识库路径
 export BANDORI_KB_PATH=/path/to/bandori-knowledge/output
-
-# 3. 重启 AstrBot
+# 重启 AstrBot
 ```
 
-插件命令：`/角色` `/歌曲` `/乐队` `/随机角色` `/随机歌曲` `/萌百搜索`
+**命令**
+
+| 命令 | 功能 | 图文 |
+|------|------|------|
+| `/角色 丰川祥子` | 查角色 | ✅ |
+| `/歌曲 壱雫空` | 查歌曲 | ❌ |
+| `/乐队 Roselia` | 查乐队 | ❌ |
+| `/声优 爱美` | 查声优 | ✅ |
+| `/随机角色` | 随机角色 | ✅ |
+| `/随机歌曲` | 随机歌曲 | - |
+| `/随机声优` | 随机声优 | ✅ |
+| `/萌百搜索 xxx` | 全站搜索 | - |
+| `/bandori` | 帮助 | - |
+
+**图片**
+
+在 `output/images/` 下按约定路径放图即自动匹配：
+```
+images/character/丰川祥子.png
+images/声优/爱美.jpg
+```
+或运行 `tools/download_images.py` 自动从萌娘扒图。
 
 ## 环境变量配置
 
