@@ -32,6 +32,7 @@ CATEGORY_DIR_MAP = {
     "角色": "角色",
     "歌曲": "歌曲",
     "乐队": "乐队",
+    "声优": "声优",
 }
 
 # 用于全局搜索的子目录列表
@@ -65,9 +66,10 @@ class KnowledgeIndex:
     """知识库全文索引"""
 
     _IMAGE_DIRS = {
-        "角色": "images/character",
-        "歌曲": "images/song",
-        "乐队": "images/band",
+        "角色": ["images/character", "images/角色"],
+        "歌曲": ["images/song", "images/歌曲"],
+        "乐队": ["images/band", "images/乐队"],
+        "声优": ["images/声优"],
     }
 
     def __init__(self, kb_root: str) -> None:
@@ -76,6 +78,7 @@ class KnowledgeIndex:
             "角色": [],
             "歌曲": [],
             "乐队": [],
+            "声优": [],
             "其它": [],
         }
         self._all_entries: list[IndexEntry] = []
@@ -181,16 +184,18 @@ class KnowledgeIndex:
 
     def _resolve_local_image(self, title: str, bucket: str) -> str:
         """按约定路径查找本地图片"""
-        sub = self._IMAGE_DIRS.get(bucket)
-        if not sub:
-            return ""
-        # 尝试多种文件名格式
-        safe_title = re.sub(r'[\\/:*?"<>|]', '_', title)
+        subs = self._IMAGE_DIRS.get(bucket, [])
         exts = (".jpg", ".png", ".webp")
-        for ext in exts:
-            path = self._kb_root / sub / f"{safe_title}{ext}"
-            if path.exists():
-                return str(path)
+        candidates = [title]
+        if " - " in title:
+            candidates.append(title.split(" - ")[0])
+        for sub in subs:
+            for name in candidates:
+                safe = re.sub(r'[\\/:*?"<>|]', '_', name)
+                for ext in exts:
+                    path = self._kb_root / sub / f"{safe}{ext}"
+                    if path.exists():
+                        return str(path)
         return ""
 
     # ── 搜索 ───────────────────────────────────────────────────────────────

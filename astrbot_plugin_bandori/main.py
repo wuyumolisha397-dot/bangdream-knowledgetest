@@ -40,6 +40,7 @@ _kb_index = _load_module("kb_index")
 _character_svc = _load_module("character")
 _song_svc = _load_module("song")
 _band_svc = _load_module("band")
+_voice_svc = _load_module("voice")
 _search_svc = _load_module("search")
 _formatter = _load_module("formatter")
 
@@ -47,6 +48,7 @@ KnowledgeIndex = _kb_index.KnowledgeIndex
 CharacterService = _character_svc.CharacterService
 SongService = _song_svc.SongService
 BandService = _band_svc.BandService
+VoiceService = _voice_svc.VoiceService
 SearchService = _search_svc.SearchService
 formatter = _formatter
 
@@ -126,6 +128,7 @@ class BandoriPlugin(Star):
         self._character_svc = CharacterService(self._index, formatter)
         self._song_svc = SongService(self._index, formatter)
         self._band_svc = BandService(self._index, formatter)
+        self._voice_svc = VoiceService(self._index, formatter)
         self._search_svc = SearchService(self._index, formatter)
 
     # ── 生命周期 ─────────────────────────────────────────────────────────────
@@ -160,21 +163,21 @@ class BandoriPlugin(Star):
     async def _send_result(
         self, event: AstrMessageEvent, result: tuple
     ) -> MessageEventResult:
-        """发送查询结果（先图后文），图片发送失败自动降级纯文本"""
+        """发送查询结果（图文合并一条消息）"""
         if isinstance(result, tuple) and len(result) == 2:
             text, image = result
         else:
             text, image = str(result), ""
 
-        # 先图
         if image:
             try:
-                # AstrBot v3/v4 通用图片发送
-                yield event.image_result(image)
-            except Exception as e:
-                logger.warning(f"[Bandori] 图片发送失败，降级纯文本: {e}")
+                # 消息链：图片 + 文本合并为一条消息
+                from astrbot.core.message.components import Image as MsgImage, Plain
+                yield event.chain_result([MsgImage(file=image), Plain(text=text)])
+                return
+            except Exception as ex:
+                logger.warning(f"[Bandori] 图文合并失败，降级纯文本: {ex}")
 
-        # 后文
         yield event.plain_result(text)
 
     # ── 命令：/角色 ───────────────────────────────────────────────────────────
@@ -260,6 +263,27 @@ class BandoriPlugin(Star):
 
         name = _extract_arg(event.message_str, "乐队")
         result = await self._band_svc.query(name)
+        async for r in self._send_result(event, result):
+            yield r
+
+    # ── 命令：/声优 ───────────────────────────────────────────────────────────
+
+    @filter.command("声优")
+    async def cmd_voice(self, event: AstrMessageEvent) -> MessageEventResult:
+        if not self._kb_ready:
+            yield event.plain_result(formatter.format_error("知识库未就绪"))
+            return
+        name = _extract_arg(event.message_str, "声优")
+        result = await self._voice_svc.query(name)
+        async for r in self._send_result(event, result):
+            yield r
+
+    @filter.command("随机声优")
+    async def cmd_random_voice(self, event: AstrMessageEvent) -> MessageEventResult:
+        if not self._kb_ready:
+            yield event.plain_result(formatter.format_error("知识库未就绪"))
+            return
+        result = await self._voice_svc.random()
         async for r in self._send_result(event, result):
             yield r
 

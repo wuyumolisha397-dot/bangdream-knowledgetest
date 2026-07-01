@@ -38,7 +38,7 @@ def _preview(text: str, n: int = 120) -> str:
 # ── 详情页 ────────────────────────────────────────────────────────────────
 
 def format_entry_detail(entry: "IndexEntry", content: str, max_len: int = 1200) -> str:
-    emoji = {"角色": "🎸", "歌曲": "🎵", "乐队": "🎪"}.get(entry.category_dir, "📖")
+    emoji = {"角色": "🎤", "歌曲": "🎵", "乐队": "🎸", "声优": "🎙️"}.get(entry.category_dir, "📖")
     body = _clean_content(content)
 
     if len(body) > max_len:
@@ -86,11 +86,11 @@ def format_search_results(
 # ── 随机 ──────────────────────────────────────────────────────────────────
 
 def format_random(entry: "IndexEntry", content: str) -> str:
-    emoji = {"角色": "🎸", "歌曲": "🎵", "乐队": "🎪"}.get(entry.category_dir, "📖")
+    emoji = {"角色": "🎤", "歌曲": "🎵", "乐队": "🎸", "声优": "🎙️"}.get(entry.category_dir, "📖")
     body = _clean_content(content)
 
-    if len(body) > 350:
-        cut = max(body.rfind("。", 300, 380), body.rfind("\n", 300, 380), 300)
+    if len(body) > 700:
+        cut = max(body.rfind("。", 600, 750), body.rfind("\n", 600, 750), 600)
         body = body[:cut] + "…"
 
     return (
@@ -105,14 +105,15 @@ def format_random(entry: "IndexEntry", content: str) -> str:
 def format_help() -> str:
     return (
         f"🎸 **BanG Dream! 知识库**\n\n"
-        f"`/角色 名字`    `角色 名字`    查询角色\n"
-        f"`/歌曲 歌名`    `歌曲 歌名`    查询歌曲\n"
-        f"`/乐队 名称`    `乐队 名称`    查询乐队\n"
-        f"`/随机角色`                    随机角色\n"
-        f"`/随机歌曲`                    随机歌曲\n"
-        f"`/萌百搜索 关键词`             全站搜索\n"
-        f"\n{HR}\n"
-        f"📖 数据：萌娘百科 BanG Dream! 专题  ·  本地检索"
+        f"`/角色 名字`     `角色 名字`     查询角色\n"
+        f"`/歌曲 歌名`     `歌曲 歌名`     查询歌曲\n"
+        f"`/乐队 名称`     `乐队 名称`     查询乐队\n"
+        f"`/声优 名字`     `声优 名字`     查询声优\n"
+        f"`/随机角色`                     随机角色\n"
+        f"`/随机歌曲`                     随机歌曲\n"
+        f"`/随机声优`                     随机声优\n"
+        f"`/萌百搜索 关键词`              全站搜索\n"
+        f"\n📖 萌娘百科 BanG Dream! 专题  ·  本地检索"
     )
 
 
